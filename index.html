@@ -272,6 +272,15 @@
       border-radius: 3px;
     }
     #btnAdd:hover { color: var(--accent); border-color: var(--accent); background: #fff3e0; }
+    #btnReset {
+      width: 100%; background: none;
+      border: 1px solid var(--border); border-radius: 3px;
+      padding: 9px; color: var(--text2);
+      font-size: 13px; font-weight: 700;
+      cursor: pointer; font-family: inherit; letter-spacing: 0.2em;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+    }
+    #btnReset:hover { color: var(--red); border-color: var(--red); background: #fff0ee; }
 
     /* Winner overlay */
     #winnerOverlay {
@@ -382,6 +391,7 @@
         <input id="newName" type="text" placeholder="名前を追加..." maxlength="10">
         <button id="btnAdd">＋ 追加</button>
       </div>
+      <button id="btnReset">↺ リセット</button>
     </section>
   </main>
 
@@ -411,7 +421,8 @@
     const MAX_RARE_PROB   = 0.20;
 
     // ===== State =====
-    let names       = ["尾水","荒川","豊原","八幡","半蔵","大里","池田"];
+    const INITIAL_NAMES = ["尾水","荒川","豊原","八幡","半蔵","大里","池田"];
+    let names       = [...INITIAL_NAMES];
     let currentAngle = -Math.PI / 2;
     let isSpinning   = false;
     let playCount    = 0;
@@ -799,8 +810,11 @@
     }
 
     // ===== Winner Reveal =====
+    let lastWinnerName = null;
+
     function announceWinner(idx) {
       const name = names[idx];
+      lastWinnerName = name;
       statusEl.innerHTML = `<span class="winner-badge">当選：${name}</span>`;
       document.getElementById("overlayName").textContent = name;
 
@@ -838,7 +852,17 @@
     document.getElementById("btnClose").addEventListener("click", () => {
       const ov = document.getElementById("winnerOverlay");
       ov.classList.remove("show");
-      setTimeout(() => { ov.style.display = "none"; }, 400);
+      setTimeout(() => {
+        ov.style.display = "none";
+        // 当選者をリストから除外して次のルーレットに反映
+        if (lastWinnerName) {
+          const i = names.indexOf(lastWinnerName);
+          if (i !== -1) names.splice(i, 1);
+          lastWinnerName = null;
+          currentAngle = -Math.PI / 2;
+          renderNameList();
+        }
+      }, 400);
     });
 
     // ===== Name List =====
@@ -874,6 +898,15 @@
     document.getElementById("btnAdd").addEventListener("click", addName);
     document.getElementById("newName").addEventListener("keydown", e => { if (e.key==="Enter") addName(); });
     document.getElementById("btnSpin").addEventListener("click", startSpin);
+    document.getElementById("btnReset").addEventListener("click", () => {
+      names = [...INITIAL_NAMES];
+      lastWinnerName = null;
+      currentAngle = -Math.PI / 2;
+      playCount = 0;
+      statusEl.innerHTML = "";
+      document.getElementById("playCounter").textContent = "1ゲーム目";
+      renderNameList();
+    });
 
     // ===== Init =====
     renderNameList();
