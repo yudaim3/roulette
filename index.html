@@ -447,6 +447,15 @@
       return currentAngle + norm + revs * 2 * Math.PI;
     }
 
+    // ホイールが止まった角度から、ポインタ位置の当選者インデックスを逆算する
+    function getWinnerIndex(angle) {
+      const n      = names.length;
+      const sliceA = (2 * Math.PI) / n;
+      // ポインタ(-π/2)からangleを引いた差分を正規化 → どのセグメントか特定
+      const off = ((-Math.PI / 2 - angle) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+      return Math.floor(off / sliceA) % n;
+    }
+
     // ===== Particle System =====
     function emitParticles(cx, cy, radius) {
       if (spinSpeedFactor < 0.15) return;
@@ -785,7 +794,8 @@
 
       isSpinning = false;
       btnSpin.disabled = false;
-      announceWinner(realWinner);
+      // 事前決定インデックスではなく、実際に止まった角度から当選者を確定する
+      announceWinner(getWinnerIndex(currentAngle));
     }
 
     // ===== Winner Reveal =====
