@@ -403,12 +403,12 @@
       "#b86010","#5028a8"
     ];
 
-    const BASE_FAKE_PROB  = 0.50;
-    const BASE_RARE_PROB  = 0.12;
-    const FAKE_PROB_INC   = 0.05;
-    const RARE_PROB_INC   = 0.03;
-    const MAX_FAKE_PROB   = 0.78;
-    const MAX_RARE_PROB   = 0.30;
+    const BASE_FAKE_PROB  = 0.20;   // フェイクはたまに（約5回に1回）
+    const BASE_RARE_PROB  = 0.08;
+    const FAKE_PROB_INC   = 0.02;   // 連続プレイでも上がりすぎない
+    const RARE_PROB_INC   = 0.02;
+    const MAX_FAKE_PROB   = 0.40;   // 最大でも40%まで
+    const MAX_RARE_PROB   = 0.20;
 
     // ===== State =====
     let names       = ["尾水","荒川","豊原","八幡","半蔵","大里","池田"];
@@ -744,7 +744,7 @@
         const j = Math.floor(Math.random()*(i+1));
         [candidates[i],candidates[j]] = [candidates[j],candidates[i]];
       }
-      const numFakes = doFakes ? clamp(randInt(1,2), 0, candidates.length) : 0;
+      const numFakes = doFakes ? Math.min(1, candidates.length) : 0; // フェイクは最大1回
       const fakes    = candidates.slice(0, numFakes);
 
       // Rare opening flash
