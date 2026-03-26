@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ルーレット</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Meiryo", "Yu Gothic", "Hiragino Sans", sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      text-align: center;
+      padding: 24px 16px 12px;
+    }
+    header h1 {
+      font-size: 32px;
+      font-weight: bold;
+      letter-spacing: 0.2em;
+      color: #FFD93D;
+      text-shadow: 0 0 20px rgba(255, 217, 61, 0.4);
+    }
+
+    main {
+      display: flex;
+      gap: 32px;
+      padding: 16px 32px 32px;
+      flex: 1;
+      justify-content: center;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    /* ===== Wheel Section ===== */
+    .wheel-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .wheel-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+
+    .pointer {
+      position: absolute;
+      top: -24px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 36px;
+      color: #FFD93D;
+      z-index: 10;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6));
+      line-height: 1;
+    }
+
+    #wheelCanvas {
+      display: block;
+      max-width: 100%;
+      border-radius: 50%;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    }
+
+    #btnSpin {
+      background: linear-gradient(135deg, #FF6B6B, #FF922B);
+      color: #fff;
+      border: none;
+      border-radius: 50px;
+      padding: 14px 52px;
+      font-size: 22px;
+      font-weight: bold;
+      letter-spacing: 0.12em;
+      cursor: pointer;
+      font-family: inherit;
+      box-shadow: 0 4px 20px rgba(255, 107, 107, 0.4);
+      transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+    }
+    #btnSpin:hover:not(:disabled) {
+      transform: translateY(-2px) scale(1.04);
+      box-shadow: 0 8px 28px rgba(255, 107, 107, 0.55);
+    }
+    #btnSpin:active:not(:disabled) {
+      transform: translateY(0) scale(0.98);
+    }
+    #btnSpin:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    #winner-display {
+      min-height: 36px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+    .winner-badge {
+      background: linear-gradient(135deg, #FFD93D, #FF922B);
+      color: #1a1a2e;
+      padding: 6px 20px;
+      border-radius: 20px;
+      letter-spacing: 0.1em;
+    }
+
+    /* ===== Side Panel ===== */
+    .side-panel {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 16px;
+      padding: 20px;
+      width: 260px;
+      min-width: 220px;
+    }
+    .side-panel h2 {
+      font-size: 16px;
+      letter-spacing: 0.1em;
+      color: #FFD93D;
+      margin-bottom: 14px;
+      font-weight: bold;
+    }
+
+    #name-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 16px;
+      max-height: 380px;
+      overflow-y: auto;
+    }
+    #name-list::-webkit-scrollbar { width: 4px; }
+    #name-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+
+    .name-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 8px 10px;
+      border-left: 4px solid transparent;
+      transition: background 0.2s;
+    }
+    .name-chip:hover { background: rgba(255, 255, 255, 0.18); }
+
+    .chip-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .chip-name {
+      flex: 1;
+      font-size: 15px;
+    }
+    .btn-remove {
+      background: rgba(255, 100, 100, 0.25);
+      border: none;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      color: #ff9999;
+      cursor: pointer;
+      font-size: 15px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+      font-family: inherit;
+      flex-shrink: 0;
+    }
+    .btn-remove:hover { background: rgba(255, 100, 100, 0.55); }
+
+    .add-form {
+      display: flex;
+      gap: 6px;
+    }
+    #newName {
+      flex: 1;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 8px;
+      padding: 8px 10px;
+      color: #fff;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    #newName::placeholder { color: rgba(255,255,255,0.4); }
+    #newName:focus { border-color: rgba(255,217,61,0.6); }
+
+    #btnAdd {
+      background: rgba(255, 217, 61, 0.2);
+      border: 1px solid rgba(255, 217, 61, 0.5);
+      border-radius: 8px;
+      padding: 8px 14px;
+      color: #FFD93D;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.2s;
+    }
+    #btnAdd:hover { background: rgba(255, 217, 61, 0.35); }
+
+    /* ===== Overlay ===== */
+    #overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s;
+    }
+    #overlay.show {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .overlay-content {
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      border: 2px solid rgba(255, 217, 61, 0.55);
+      border-radius: 24px;
+      padding: 44px 60px;
+      text-align: center;
+      box-shadow: 0 0 60px rgba(255, 217, 61, 0.25);
+      animation: popIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+      min-width: 280px;
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0.4); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+
+    .confetti-area {
+      position: relative;
+      height: 48px;
+      overflow: visible;
+      margin-bottom: 8px;
+    }
+    .confetti-piece {
+      position: absolute;
+      top: 0;
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      animation: confettiFall linear forwards;
+    }
+    @keyframes confettiFall {
+      0%   { transform: translateY(0) rotate(0deg);     opacity: 1; }
+      100% { transform: translateY(90px) rotate(720deg); opacity: 0; }
+    }
+
+    .winner-label {
+      font-size: 15px;
+      color: #FFD93D;
+      letter-spacing: 0.25em;
+      margin-bottom: 10px;
+    }
+    #overlay-name {
+      font-size: 52px;
+      font-weight: bold;
+      color: #fff;
+      margin-bottom: 28px;
+      text-shadow: 0 0 24px rgba(255, 217, 61, 0.5);
+      line-height: 1.2;
+    }
+    #btnClose {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 50px;
+      padding: 10px 36px;
+      color: #fff;
+      font-size: 15px;
+      cursor: pointer;
+      font-family: inherit;
+      letter-spacing: 0.1em;
+      transition: background 0.2s;
+    }
+    #btnClose:hover { background: rgba(255,255,255,0.28); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🎰 ルーレット</h1>
+  </header>
+
+  <main>
+    <section class="wheel-section">
+      <div class="wheel-wrapper">
+        <div class="pointer">▼</div>
+        <canvas id="wheelCanvas" width="480" height="480"></canvas>
+      </div>
+      <button id="btnSpin">スピン！</button>
+      <div id="winner-display"></div>
+    </section>
+
+    <section class="side-panel">
+      <h2>参加者リスト</h2>
+      <div id="name-list"></div>
+      <div class="add-form">
+        <input id="newName" type="text" placeholder="名前を入力" maxlength="10">
+        <button id="btnAdd">追加</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Winner Overlay -->
+  <div id="overlay">
+    <div class="overlay-content">
+      <div class="confetti-area" id="confettiArea"></div>
+      <p class="winner-label">当 選 者</p>
+      <p id="overlay-name"></p>
+      <button id="btnClose">閉じる</button>
+    </div>
+  </div>
+
+  <script>
+    // ===== State =====
+    let names = ["尾水", "荒川", "豊原", "八幡", "半蔵", "大里", "池田"];
+    let currentAngle = -Math.PI / 2;  // top = 12 o'clock
+    let isSpinning = false;
+
+    const COLORS = [
+      "#FF6B6B", "#FFD93D", "#6BCB77", "#4D96FF",
+      "#FF922B", "#CC5DE8", "#20C997", "#F06595",
+      "#74C0FC", "#A9E34B"
+    ];
+
+    // ===== Canvas =====
+    const canvas = document.getElementById("wheelCanvas");
+    const ctx = canvas.getContext("2d");
+
+    function drawWheel(angle) {
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      const radius = cx - 12;
+      const n = names.length;
+      const sliceAngle = (2 * Math.PI) / n;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      names.forEach((name, i) => {
+        const start = angle + i * sliceAngle;
+        const end   = start + sliceAngle;
+        const mid   = start + sliceAngle / 2;
+
+        // Segment fill
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, radius, start, end);
+        ctx.closePath();
+        ctx.fillStyle = COLORS[i % COLORS.length];
+        ctx.fill();
+
+        // Segment border
+        ctx.strokeStyle = "rgba(255,255,255,0.55)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Text
+        const textR = radius * 0.62;
+        const tx = cx + textR * Math.cos(mid);
+        const ty = cy + textR * Math.sin(mid);
+        const fontSize = Math.max(12, Math.min(22, Math.floor(300 / n)));
+
+        ctx.save();
+        ctx.translate(tx, ty);
+        ctx.rotate(mid + Math.PI / 2);
+        ctx.font = `bold ${fontSize}px "Meiryo", "Yu Gothic", sans-serif`;
+        ctx.fillStyle = "#fff";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.shadowColor = "rgba(0,0,0,0.55)";
+        ctx.shadowBlur = 5;
+        ctx.fillText(name, 0, 0);
+        ctx.restore();
+      });
+
+      // Outer rim
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+      ctx.strokeStyle = "rgba(0,0,0,0.2)";
+      ctx.lineWidth = 10;
+      ctx.stroke();
+
+      // Center hub
+      ctx.beginPath();
+      ctx.arc(cx, cy, 20, 0, 2 * Math.PI);
+      ctx.fillStyle = "#fff";
+      ctx.shadowColor = "transparent";
+      ctx.fill();
+      ctx.strokeStyle = "#ccc";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+
+    // ===== Spin =====
+    function startSpin() {
+      if (isSpinning || names.length < 2) return;
+      isSpinning = true;
+      document.getElementById("btnSpin").disabled = true;
+      document.getElementById("winner-display").innerHTML = "";
+
+      const winnerIndex = Math.floor(Math.random() * names.length);
+      const sliceAngle  = (2 * Math.PI) / names.length;
+
+      // Calculate the target angle so winnerIndex's segment center lands at pointer (top = -PI/2)
+      const winnerMid = winnerIndex * sliceAngle + sliceAngle / 2;
+      const extraSpins = (8 + Math.floor(Math.random() * 8)) * 2 * Math.PI;
+      // We want: currentAngle + delta + winnerMid ≡ -PI/2 (mod 2PI)
+      const rawDelta = (-Math.PI / 2 - currentAngle - winnerMid);
+      const normalizedDelta = ((rawDelta % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+      const targetAngle = currentAngle + normalizedDelta + extraSpins;
+
+      const duration  = 5500 + Math.random() * 1500;  // 5.5–7s
+      const startAngle = currentAngle;
+      const startTime  = performance.now();
+
+      function easeOut(t) {
+        return 1 - Math.pow(1 - t, 3);
+      }
+
+      function animate(now) {
+        const t = Math.min((now - startTime) / duration, 1);
+        currentAngle = startAngle + (targetAngle - startAngle) * easeOut(t);
+        drawWheel(currentAngle);
+
+        if (t < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          currentAngle = targetAngle;
+          drawWheel(currentAngle);
+          isSpinning = false;
+          document.getElementById("btnSpin").disabled = false;
+          announceWinner(winnerIndex);
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    // ===== Winner =====
+    function announceWinner(index) {
+      const name = names[index];
+
+      // Inline badge
+      document.getElementById("winner-display").innerHTML =
+        `<span class="winner-badge">当選：${name}</span>`;
+
+      // Overlay
+      document.getElementById("overlay-name").textContent = name;
+      launchConfetti();
+      const overlay = document.getElementById("overlay");
+      overlay.style.display = "flex";
+      requestAnimationFrame(() => overlay.classList.add("show"));
+    }
+
+    function launchConfetti() {
+      const area = document.getElementById("confettiArea");
+      area.innerHTML = "";
+      for (let i = 0; i < 32; i++) {
+        const el = document.createElement("span");
+        el.className = "confetti-piece";
+        el.style.left = `${Math.random() * 100}%`;
+        el.style.background = COLORS[i % COLORS.length];
+        el.style.animationDelay = `${Math.random() * 0.5}s`;
+        el.style.animationDuration = `${0.7 + Math.random() * 0.8}s`;
+        area.appendChild(el);
+      }
+    }
+
+    document.getElementById("btnClose").addEventListener("click", () => {
+      const overlay = document.getElementById("overlay");
+      overlay.classList.remove("show");
+      setTimeout(() => { overlay.style.display = "none"; }, 350);
+    });
+
+    // ===== Name List =====
+    function renderNameList() {
+      const container = document.getElementById("name-list");
+      container.innerHTML = names.map((name, i) => `
+        <div class="name-chip" style="border-left-color: ${COLORS[i % COLORS.length]}">
+          <span class="chip-dot" style="background: ${COLORS[i % COLORS.length]}"></span>
+          <span class="chip-name">${name}</span>
+          <button class="btn-remove" onclick="removeName(${i})" title="削除">×</button>
+        </div>
+      `).join("");
+      drawWheel(currentAngle);
+      document.getElementById("btnSpin").disabled = names.length < 2;
+    }
+
+    function addName() {
+      const input = document.getElementById("newName");
+      const name  = input.value.trim();
+      if (!name) return;
+      if (names.includes(name)) {
+        alert("その名前は既に追加されています");
+        return;
+      }
+      if (names.length >= 20) {
+        alert("最大20名まで追加できます");
+        return;
+      }
+      names.push(name);
+      input.value = "";
+      renderNameList();
+    }
+
+    function removeName(index) {
+      if (names.length <= 2) {
+        alert("最低2名必要です");
+        return;
+      }
+      names.splice(index, 1);
+      renderNameList();
+    }
+
+    document.getElementById("btnAdd").addEventListener("click", addName);
+    document.getElementById("newName").addEventListener("keydown", e => {
+      if (e.key === "Enter") addName();
+    });
+    document.getElementById("btnSpin").addEventListener("click", startSpin);
+
+    // ===== Init =====
+    renderNameList();
+  </script>
+</body>
+</html>
