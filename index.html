@@ -5,45 +5,86 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ルーレット</title>
   <style>
+    :root {
+      --bg:      #100d0a;
+      --bg2:     #1c1815;
+      --bg3:     #242018;
+      --accent:  #d4920a;
+      --accent2: #c43a1a;
+      --text:    #f0e8d0;
+      --text2:   #a8998a;
+      --border:  #3a3020;
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ---- Grain overlay ---- */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/></filter><rect width='180' height='180' filter='url(%23n)' opacity='0.12'/></svg>");
+      opacity: 0.55;
+      mix-blend-mode: overlay;
+    }
 
     body {
       font-family: "Meiryo", "Yu Gothic", "Hiragino Sans", sans-serif;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      background-color: var(--bg);
       min-height: 100vh;
-      color: #fff;
+      color: var(--text);
       display: flex;
       flex-direction: column;
     }
 
+    /* ---- Header ---- */
     header {
-      text-align: center;
-      padding: 24px 16px 12px;
+      padding: 28px 32px 0;
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 20px;
     }
-    header h1 {
-      font-size: 32px;
-      font-weight: bold;
-      letter-spacing: 0.2em;
-      color: #FFD93D;
-      text-shadow: 0 0 20px rgba(255, 217, 61, 0.4);
+    header .title-main {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.45em;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+    header .title-jp {
+      font-size: 36px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      color: var(--text);
+      line-height: 1;
+    }
+    header .title-rule {
+      flex: 1;
+      height: 2px;
+      background: var(--border);
     }
 
+    /* ---- Main layout ---- */
     main {
       display: flex;
-      gap: 32px;
-      padding: 16px 32px 32px;
+      gap: 0;
       flex: 1;
-      justify-content: center;
       align-items: flex-start;
-      flex-wrap: wrap;
     }
 
-    /* ===== Wheel Section ===== */
+    /* ---- Wheel Section ---- */
     .wheel-section {
+      flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 20px;
+      padding: 36px 32px;
+      gap: 24px;
+      border-right: 2px solid var(--border);
     }
 
     .wheel-wrapper {
@@ -51,318 +92,455 @@
       display: inline-block;
     }
 
-    .pointer {
+    /* Pointer */
+    .pointer-wrap {
       position: absolute;
-      top: -24px;
+      top: -2px;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 36px;
-      color: #FFD93D;
       z-index: 10;
-      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6));
-      line-height: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .pointer-body {
+      width: 0;
+      height: 0;
+      border-left: 14px solid transparent;
+      border-right: 14px solid transparent;
+      border-top: 34px solid var(--accent);
+      filter: drop-shadow(0 3px 0 #7a5000);
     }
 
+    /* Canvas */
     #wheelCanvas {
       display: block;
-      max-width: 100%;
       border-radius: 50%;
-      box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+      box-shadow: 6px 6px 0 #0a0806, 0 0 0 3px var(--accent), 0 0 0 8px var(--bg2), 0 0 0 10px var(--border);
+    }
+    #wheelCanvas.glitching {
+      filter: blur(4px) saturate(2.5) contrast(1.1);
+      transition: filter 0.25s;
     }
 
+    /* Glitch overlay */
+    #glitchOverlay {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: radial-gradient(circle at center,
+        rgba(12, 8, 4, 0.5) 30%,
+        rgba(200, 80, 20, 0.15) 70%,
+        rgba(12, 8, 4, 0.7) 100%
+      );
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 6;
+      border-radius: 50%;
+      overflow: hidden;
+    }
+    #glitchOverlay.active {
+      opacity: 1;
+      animation: glitchPulse 0.12s steps(1) infinite;
+    }
+    @keyframes glitchPulse {
+      0%   { background-position: 0 0; }
+      33%  { background-position: 3px -2px; }
+      66%  { background-position: -2px 3px; }
+      100% { background-position: 0 0; }
+    }
+    #scrambleText {
+      font-size: 52px;
+      font-weight: 900;
+      color: #ff7030;
+      text-shadow:
+        0 0 12px #ff7030,
+        0 0 30px rgba(255, 112, 48, 0.6),
+        3px 3px 0 rgba(0,0,0,0.8);
+      letter-spacing: 0.15em;
+      text-align: center;
+      line-height: 1.3;
+      transition: color 0.2s, font-size 0.2s;
+    }
+    #scrambleText.hazure {
+      color: #ff2a2a;
+      font-size: 38px;
+      text-shadow:
+        0 0 12px #ff2a2a,
+        0 0 30px rgba(255, 42, 42, 0.7),
+        2px 2px 0 rgba(0,0,0,0.8);
+      letter-spacing: 0.3em;
+    }
+
+    /* Spin button */
     #btnSpin {
-      background: linear-gradient(135deg, #FF6B6B, #FF922B);
-      color: #fff;
-      border: none;
-      border-radius: 50px;
-      padding: 14px 52px;
-      font-size: 22px;
-      font-weight: bold;
-      letter-spacing: 0.12em;
+      background: var(--accent2);
+      color: var(--text);
+      border: 2px solid #8a2810;
+      border-radius: 0;
+      padding: 14px 56px;
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: 0.2em;
       cursor: pointer;
       font-family: inherit;
-      box-shadow: 0 4px 20px rgba(255, 107, 107, 0.4);
-      transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+      box-shadow: 5px 5px 0 #6a1808;
+      transition: transform 0.08s, box-shadow 0.08s;
+      position: relative;
+    }
+    #btnSpin::before {
+      content: '▶ ';
+      font-size: 14px;
+      opacity: 0.8;
     }
     #btnSpin:hover:not(:disabled) {
-      transform: translateY(-2px) scale(1.04);
-      box-shadow: 0 8px 28px rgba(255, 107, 107, 0.55);
+      transform: translate(-2px, -2px);
+      box-shadow: 7px 7px 0 #6a1808;
     }
     #btnSpin:active:not(:disabled) {
-      transform: translateY(0) scale(0.98);
+      transform: translate(3px, 3px);
+      box-shadow: 2px 2px 0 #6a1808;
     }
     #btnSpin:disabled {
-      opacity: 0.45;
+      background: var(--bg3);
+      border-color: var(--border);
+      color: var(--text2);
+      box-shadow: 3px 3px 0 #0a0806;
       cursor: not-allowed;
       transform: none;
     }
+    #btnSpin:disabled::before { content: ''; }
 
-    #winner-display {
-      min-height: 36px;
-      font-size: 20px;
-      font-weight: bold;
+    /* Status display */
+    #status-display {
+      min-height: 32px;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      color: var(--text2);
+      text-align: center;
     }
     .winner-badge {
-      background: linear-gradient(135deg, #FFD93D, #FF922B);
-      color: #1a1a2e;
-      padding: 6px 20px;
-      border-radius: 20px;
-      letter-spacing: 0.1em;
+      display: inline-block;
+      background: var(--accent);
+      color: #0a0806;
+      padding: 5px 20px;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      box-shadow: 3px 3px 0 #7a5000;
+    }
+    .fake-badge {
+      color: var(--accent2);
+      letter-spacing: 0.2em;
     }
 
-    /* ===== Side Panel ===== */
+    /* ---- Side Panel ---- */
     .side-panel {
-      background: rgba(255, 255, 255, 0.08);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 16px;
-      padding: 20px;
       width: 260px;
-      min-width: 220px;
+      flex-shrink: 0;
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
     }
-    .side-panel h2 {
-      font-size: 16px;
-      letter-spacing: 0.1em;
-      color: #FFD93D;
-      margin-bottom: 14px;
-      font-weight: bold;
+
+    .panel-heading {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5em;
+      color: var(--accent);
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
     }
 
     #name-list {
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      margin-bottom: 16px;
-      max-height: 380px;
+      gap: 4px;
+      max-height: 400px;
       overflow-y: auto;
     }
-    #name-list::-webkit-scrollbar { width: 4px; }
-    #name-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+    #name-list::-webkit-scrollbar { width: 3px; }
+    #name-list::-webkit-scrollbar-thumb { background: var(--border); }
 
     .name-chip {
       display: flex;
       align-items: center;
-      gap: 8px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
-      padding: 8px 10px;
-      border-left: 4px solid transparent;
-      transition: background 0.2s;
+      gap: 10px;
+      padding: 9px 10px;
+      border: 1px solid var(--border);
+      background: var(--bg2);
+      transition: border-color 0.15s, background 0.15s;
+      cursor: default;
     }
-    .name-chip:hover { background: rgba(255, 255, 255, 0.18); }
-
+    .name-chip:hover {
+      background: var(--bg3);
+      border-color: var(--accent);
+    }
+    .chip-num {
+      font-size: 11px;
+      color: var(--text2);
+      font-weight: 700;
+      width: 18px;
+      text-align: right;
+      flex-shrink: 0;
+    }
     .chip-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
+      width: 8px;
+      height: 8px;
       flex-shrink: 0;
     }
     .chip-name {
       flex: 1;
       font-size: 15px;
+      font-weight: 700;
     }
     .btn-remove {
-      background: rgba(255, 100, 100, 0.25);
-      border: none;
-      border-radius: 50%;
+      background: none;
+      border: 1px solid transparent;
       width: 22px;
       height: 22px;
-      color: #ff9999;
+      color: var(--text2);
       cursor: pointer;
-      font-size: 15px;
-      line-height: 1;
+      font-size: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.2s;
+      transition: color 0.15s, border-color 0.15s;
       font-family: inherit;
       flex-shrink: 0;
     }
-    .btn-remove:hover { background: rgba(255, 100, 100, 0.55); }
+    .btn-remove:hover {
+      color: var(--accent2);
+      border-color: var(--accent2);
+    }
 
     .add-form {
       display: flex;
-      gap: 6px;
+      flex-direction: column;
+      gap: 8px;
     }
     #newName {
-      flex: 1;
-      background: rgba(255,255,255,0.12);
-      border: 1px solid rgba(255,255,255,0.25);
-      border-radius: 8px;
-      padding: 8px 10px;
-      color: #fff;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 0;
+      padding: 9px 12px;
+      color: var(--text);
       font-size: 14px;
       font-family: inherit;
       outline: none;
-      transition: border-color 0.2s;
+      transition: border-color 0.15s;
     }
-    #newName::placeholder { color: rgba(255,255,255,0.4); }
-    #newName:focus { border-color: rgba(255,217,61,0.6); }
-
+    #newName::placeholder { color: var(--text2); }
+    #newName:focus { border-color: var(--accent); }
     #btnAdd {
-      background: rgba(255, 217, 61, 0.2);
-      border: 1px solid rgba(255, 217, 61, 0.5);
-      border-radius: 8px;
-      padding: 8px 14px;
-      color: #FFD93D;
-      font-size: 14px;
-      font-weight: bold;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 0;
+      padding: 9px;
+      color: var(--text2);
+      font-size: 13px;
+      font-weight: 700;
       cursor: pointer;
       font-family: inherit;
-      transition: background 0.2s;
+      letter-spacing: 0.15em;
+      transition: color 0.15s, border-color 0.15s;
     }
-    #btnAdd:hover { background: rgba(255, 217, 61, 0.35); }
+    #btnAdd:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
 
-    /* ===== Overlay ===== */
-    #overlay {
+    /* ---- Winner Overlay ---- */
+    #winnerOverlay {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.75);
+      background: rgba(8, 6, 4, 0.88);
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 100;
+      z-index: 200;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.35s;
+      transition: opacity 0.4s;
     }
-    #overlay.show {
+    #winnerOverlay.show {
       opacity: 1;
       pointer-events: all;
     }
-
-    .overlay-content {
-      background: linear-gradient(135deg, #1a1a2e, #16213e);
-      border: 2px solid rgba(255, 217, 61, 0.55);
-      border-radius: 24px;
-      padding: 44px 60px;
+    .winner-card {
+      background: var(--bg2);
+      border: 2px solid var(--accent);
+      box-shadow: 8px 8px 0 #7a5000, 0 0 60px rgba(212, 146, 10, 0.15);
+      padding: 48px 64px;
       text-align: center;
-      box-shadow: 0 0 60px rgba(255, 217, 61, 0.25);
-      animation: popIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
-      min-width: 280px;
+      min-width: 300px;
+      animation: cardPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-
-    @keyframes popIn {
-      from { transform: scale(0.4); opacity: 0; }
-      to   { transform: scale(1);   opacity: 1; }
+    @keyframes cardPop {
+      from { transform: scale(0.6) translateY(20px); opacity: 0; }
+      to   { transform: scale(1) translateY(0);     opacity: 1; }
     }
-
     .confetti-area {
       position: relative;
-      height: 48px;
+      height: 40px;
       overflow: visible;
-      margin-bottom: 8px;
+      margin-bottom: 16px;
     }
     .confetti-piece {
       position: absolute;
       top: 0;
-      width: 8px;
-      height: 8px;
-      border-radius: 2px;
+      width: 7px;
+      height: 7px;
       animation: confettiFall linear forwards;
     }
     @keyframes confettiFall {
-      0%   { transform: translateY(0) rotate(0deg);     opacity: 1; }
-      100% { transform: translateY(90px) rotate(720deg); opacity: 0; }
+      0%   { transform: translateY(0) rotate(0deg);      opacity: 1; }
+      100% { transform: translateY(100px) rotate(720deg); opacity: 0; }
     }
-
-    .winner-label {
-      font-size: 15px;
-      color: #FFD93D;
-      letter-spacing: 0.25em;
-      margin-bottom: 10px;
+    .winner-label-sm {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.6em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 14px;
     }
-    #overlay-name {
-      font-size: 52px;
-      font-weight: bold;
-      color: #fff;
-      margin-bottom: 28px;
-      text-shadow: 0 0 24px rgba(255, 217, 61, 0.5);
-      line-height: 1.2;
+    #overlayName {
+      font-size: 58px;
+      font-weight: 900;
+      color: var(--text);
+      line-height: 1.1;
+      margin-bottom: 36px;
+      letter-spacing: 0.05em;
     }
     #btnClose {
-      background: rgba(255, 255, 255, 0.15);
-      border: 1px solid rgba(255,255,255,0.3);
-      border-radius: 50px;
-      padding: 10px 36px;
-      color: #fff;
-      font-size: 15px;
+      background: none;
+      border: 2px solid var(--border);
+      padding: 10px 40px;
+      color: var(--text2);
+      font-size: 13px;
+      font-weight: 700;
       cursor: pointer;
       font-family: inherit;
-      letter-spacing: 0.1em;
-      transition: background 0.2s;
+      letter-spacing: 0.2em;
+      box-shadow: 3px 3px 0 var(--bg);
+      transition: color 0.15s, border-color 0.15s;
+      border-radius: 0;
     }
-    #btnClose:hover { background: rgba(255,255,255,0.28); }
+    #btnClose:hover {
+      color: var(--text);
+      border-color: var(--accent);
+    }
+
+    /* ---- Responsive ---- */
+    @media (max-width: 700px) {
+      main { flex-direction: column; }
+      .wheel-section { border-right: none; border-bottom: 2px solid var(--border); }
+      .side-panel { width: 100%; }
+      #wheelCanvas { width: 320px; height: 320px; }
+    }
   </style>
 </head>
 <body>
 
   <header>
-    <h1>🎰 ルーレット</h1>
+    <div>
+      <div class="title-main">ROULETTE</div>
+      <div class="title-jp">ルーレット</div>
+    </div>
+    <div class="title-rule"></div>
   </header>
 
   <main>
     <section class="wheel-section">
       <div class="wheel-wrapper">
-        <div class="pointer">▼</div>
-        <canvas id="wheelCanvas" width="480" height="480"></canvas>
+        <div class="pointer-wrap">
+          <div class="pointer-body"></div>
+        </div>
+        <canvas id="wheelCanvas" width="460" height="460"></canvas>
+        <div id="glitchOverlay">
+          <div id="scrambleText">？？</div>
+        </div>
       </div>
-      <button id="btnSpin">スピン！</button>
-      <div id="winner-display"></div>
+      <button id="btnSpin">スピン</button>
+      <div id="status-display"></div>
     </section>
 
     <section class="side-panel">
-      <h2>参加者リスト</h2>
+      <div class="panel-heading">PLAYERS</div>
       <div id="name-list"></div>
       <div class="add-form">
-        <input id="newName" type="text" placeholder="名前を入力" maxlength="10">
-        <button id="btnAdd">追加</button>
+        <input id="newName" type="text" placeholder="名前を追加..." maxlength="10">
+        <button id="btnAdd">＋ 追加</button>
       </div>
     </section>
   </main>
 
   <!-- Winner Overlay -->
-  <div id="overlay">
-    <div class="overlay-content">
+  <div id="winnerOverlay">
+    <div class="winner-card">
       <div class="confetti-area" id="confettiArea"></div>
-      <p class="winner-label">当 選 者</p>
-      <p id="overlay-name"></p>
-      <button id="btnClose">閉じる</button>
+      <p class="winner-label-sm">WINNER</p>
+      <p id="overlayName"></p>
+      <button id="btnClose">CLOSE</button>
     </div>
   </div>
 
   <script>
     // ===== State =====
     let names = ["尾水", "荒川", "豊原", "八幡", "半蔵", "大里", "池田"];
-    let currentAngle = -Math.PI / 2;  // top = 12 o'clock
+    let currentAngle = -Math.PI / 2;
     let isSpinning = false;
 
     const COLORS = [
-      "#FF6B6B", "#FFD93D", "#6BCB77", "#4D96FF",
-      "#FF922B", "#CC5DE8", "#20C997", "#F06595",
-      "#74C0FC", "#A9E34B"
+      "#c44030",  // terracotta
+      "#d47820",  // amber
+      "#8a9020",  // olive
+      "#2a8060",  // teal
+      "#4a3a90",  // indigo
+      "#b04070",  // cranberry
+      "#903020",  // rust
+      "#3a6840",  // forest
+      "#704090",  // grape
+      "#2a5878",  // steel
     ];
 
     // ===== Canvas =====
-    const canvas = document.getElementById("wheelCanvas");
-    const ctx = canvas.getContext("2d");
+    const canvas  = document.getElementById("wheelCanvas");
+    const ctx     = canvas.getContext("2d");
 
     function drawWheel(angle) {
       const cx = canvas.width / 2;
       const cy = canvas.height / 2;
-      const radius = cx - 12;
+      const radius = cx - 14;
       const n = names.length;
       const sliceAngle = (2 * Math.PI) / n;
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Shadow behind wheel
+      ctx.save();
+      ctx.shadowColor = "rgba(0,0,0,0.6)";
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 6;
+      ctx.shadowOffsetY = 6;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+      ctx.fillStyle = "#000";
+      ctx.fill();
+      ctx.restore();
 
       names.forEach((name, i) => {
         const start = angle + i * sliceAngle;
         const end   = start + sliceAngle;
         const mid   = start + sliceAngle / 2;
 
-        // Segment fill
+        // Segment
         ctx.beginPath();
         ctx.moveTo(cx, cy);
         ctx.arc(cx, cy, radius, start, end);
@@ -370,137 +548,243 @@
         ctx.fillStyle = COLORS[i % COLORS.length];
         ctx.fill();
 
-        // Segment border
-        ctx.strokeStyle = "rgba(255,255,255,0.55)";
+        // Separator lines
+        ctx.strokeStyle = "rgba(0,0,0,0.35)";
         ctx.lineWidth = 2;
         ctx.stroke();
 
+        // Inner lighter stripe for depth
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, radius * 0.96, start + 0.01, end - 0.01);
+        ctx.closePath();
+        ctx.strokeStyle = "rgba(255,255,255,0.08)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
         // Text
-        const textR = radius * 0.62;
+        const textR = radius * 0.63;
         const tx = cx + textR * Math.cos(mid);
         const ty = cy + textR * Math.sin(mid);
-        const fontSize = Math.max(12, Math.min(22, Math.floor(300 / n)));
+        const fontSize = Math.max(11, Math.min(21, Math.floor(290 / n)));
 
         ctx.save();
         ctx.translate(tx, ty);
         ctx.rotate(mid + Math.PI / 2);
-        ctx.font = `bold ${fontSize}px "Meiryo", "Yu Gothic", sans-serif`;
-        ctx.fillStyle = "#fff";
+        ctx.font = `900 ${fontSize}px "Meiryo", "Yu Gothic", sans-serif`;
+        ctx.fillStyle = "rgba(255,255,255,0.95)";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.shadowColor = "rgba(0,0,0,0.55)";
-        ctx.shadowBlur = 5;
+        ctx.shadowColor = "rgba(0,0,0,0.7)";
+        ctx.shadowBlur = 4;
+        ctx.shadowOffsetX = 1;
+        ctx.shadowOffsetY = 1;
         ctx.fillText(name, 0, 0);
         ctx.restore();
       });
 
-      // Outer rim
+      // Gold outer ring
       ctx.beginPath();
       ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
-      ctx.strokeStyle = "rgba(0,0,0,0.2)";
-      ctx.lineWidth = 10;
+      ctx.strokeStyle = "#d4920a";
+      ctx.lineWidth = 5;
+      ctx.shadowColor = "transparent";
+      ctx.stroke();
+
+      // Dark outer rim
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius + 3, 0, 2 * Math.PI);
+      ctx.strokeStyle = "rgba(0,0,0,0.5)";
+      ctx.lineWidth = 6;
       ctx.stroke();
 
       // Center hub
       ctx.beginPath();
-      ctx.arc(cx, cy, 20, 0, 2 * Math.PI);
-      ctx.fillStyle = "#fff";
+      ctx.arc(cx, cy, 18, 0, 2 * Math.PI);
+      ctx.fillStyle = "#1c1815";
       ctx.shadowColor = "transparent";
       ctx.fill();
-      ctx.strokeStyle = "#ccc";
+      ctx.strokeStyle = "#d4920a";
       ctx.lineWidth = 3;
       ctx.stroke();
+
+      // Hub dot
+      ctx.beginPath();
+      ctx.arc(cx, cy, 5, 0, 2 * Math.PI);
+      ctx.fillStyle = "#d4920a";
+      ctx.fill();
     }
 
-    // ===== Spin =====
-    function startSpin() {
+    // ===== Helpers =====
+    function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    function calcTargetAngle(targetIndex, extraRevs) {
+      const sliceAngle = (2 * Math.PI) / names.length;
+      const targetMid  = targetIndex * sliceAngle + sliceAngle / 2;
+      const rawDelta   = (-Math.PI / 2 - currentAngle - targetMid);
+      const normDelta  = ((rawDelta % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+      return currentAngle + normDelta + extraRevs * 2 * Math.PI;
+    }
+
+    function easeOut3(t) { return 1 - Math.pow(1 - t, 3); }
+    function easeInOut(t) { return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2; }
+
+    function spinToTarget(targetIndex, { revs, duration, easing = easeOut3 }) {
+      return new Promise(resolve => {
+        const targetAngle = calcTargetAngle(targetIndex, revs);
+        const startAngle  = currentAngle;
+        const startTime   = performance.now();
+
+        function frame(now) {
+          const t = Math.min((now - startTime) / duration, 1);
+          currentAngle = startAngle + (targetAngle - startAngle) * easing(t);
+          drawWheel(currentAngle);
+          if (t < 1) { requestAnimationFrame(frame); }
+          else {
+            currentAngle = targetAngle;
+            drawWheel(currentAngle);
+            resolve();
+          }
+        }
+        requestAnimationFrame(frame);
+      });
+    }
+
+    // ===== Glitch / Fake-out =====
+    const KANJI_POOL = "あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをんアイウエオカキクケコ";
+
+    async function glitchPhase() {
+      const overlay     = document.getElementById("glitchOverlay");
+      const scrambleEl  = document.getElementById("scrambleText");
+      const statusEl    = document.getElementById("status-display");
+
+      scrambleEl.classList.remove("hazure");
+      scrambleEl.style.fontSize = "52px";
+      canvas.classList.add("glitching");
+      overlay.classList.add("active");
+      statusEl.innerHTML = `<span class="fake-badge">読み込み中...</span>`;
+
+      // Scramble phase (1100ms)
+      await new Promise(resolve => {
+        const start = performance.now();
+        const len = 2;
+        function tick() {
+          const elapsed = performance.now() - start;
+          if (elapsed < 1100) {
+            let txt = "";
+            for (let i = 0; i < len; i++) {
+              txt += KANJI_POOL[Math.floor(Math.random() * KANJI_POOL.length)];
+            }
+            scrambleEl.textContent = txt;
+            setTimeout(tick, 55);
+          } else { resolve(); }
+        }
+        tick();
+      });
+
+      // ハズレ! phase (700ms)
+      scrambleEl.classList.add("hazure");
+      scrambleEl.textContent = "ハズレ！";
+      await wait(700);
+
+      // Fade out
+      canvas.classList.remove("glitching");
+      overlay.classList.remove("active");
+      statusEl.innerHTML = "";
+      await wait(250);
+    }
+
+    // ===== Main Spin Sequence =====
+    async function startSpin() {
       if (isSpinning || names.length < 2) return;
       isSpinning = true;
       document.getElementById("btnSpin").disabled = true;
-      document.getElementById("winner-display").innerHTML = "";
+      document.getElementById("status-display").innerHTML = "";
 
-      const winnerIndex = Math.floor(Math.random() * names.length);
-      const sliceAngle  = (2 * Math.PI) / names.length;
+      const n = names.length;
+      const realWinner = Math.floor(Math.random() * n);
 
-      // Calculate the target angle so winnerIndex's segment center lands at pointer (top = -PI/2)
-      const winnerMid = winnerIndex * sliceAngle + sliceAngle / 2;
-      const extraSpins = (8 + Math.floor(Math.random() * 8)) * 2 * Math.PI;
-      // We want: currentAngle + delta + winnerMid ≡ -PI/2 (mod 2PI)
-      const rawDelta = (-Math.PI / 2 - currentAngle - winnerMid);
-      const normalizedDelta = ((rawDelta % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-      const targetAngle = currentAngle + normalizedDelta + extraSpins;
+      // Pick fake stops (distinct from real winner)
+      const candidates = [...Array(n).keys()].filter(i => i !== realWinner);
+      for (let i = candidates.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+      }
+      const numFakes = Math.min(2, candidates.length);
+      const fakes = candidates.slice(0, numFakes);
 
-      const duration  = 5500 + Math.random() * 1500;  // 5.5–7s
-      const startAngle = currentAngle;
-      const startTime  = performance.now();
+      // Phase 1-N: Fake stops
+      const fakeRevs     = [6 + Math.random() * 4, 4 + Math.random() * 3];
+      const fakeDurations = [3800 + Math.random() * 1200, 3200 + Math.random() * 1000];
 
-      function easeOut(t) {
-        return 1 - Math.pow(1 - t, 3);
+      for (let i = 0; i < fakes.length; i++) {
+        await spinToTarget(fakes[i], {
+          revs: fakeRevs[i],
+          duration: fakeDurations[i],
+          easing: easeOut3
+        });
+        await wait(350);         // 止まって見える間
+        await glitchPhase();
+        await wait(150);
       }
 
-      function animate(now) {
-        const t = Math.min((now - startTime) / duration, 1);
-        currentAngle = startAngle + (targetAngle - startAngle) * easeOut(t);
-        drawWheel(currentAngle);
+      // Final: Real spin (re-acceleration feel: easeInOut)
+      await spinToTarget(realWinner, {
+        revs: 7 + Math.random() * 5,
+        duration: 5500 + Math.random() * 1500,
+        easing: easeOut3
+      });
 
-        if (t < 1) {
-          requestAnimationFrame(animate);
-        } else {
-          currentAngle = targetAngle;
-          drawWheel(currentAngle);
-          isSpinning = false;
-          document.getElementById("btnSpin").disabled = false;
-          announceWinner(winnerIndex);
-        }
-      }
-
-      requestAnimationFrame(animate);
+      isSpinning = false;
+      document.getElementById("btnSpin").disabled = false;
+      announceWinner(realWinner);
     }
 
     // ===== Winner =====
     function announceWinner(index) {
       const name = names[index];
 
-      // Inline badge
-      document.getElementById("winner-display").innerHTML =
+      document.getElementById("status-display").innerHTML =
         `<span class="winner-badge">当選：${name}</span>`;
 
-      // Overlay
-      document.getElementById("overlay-name").textContent = name;
+      document.getElementById("overlayName").textContent = name;
       launchConfetti();
-      const overlay = document.getElementById("overlay");
-      overlay.style.display = "flex";
-      requestAnimationFrame(() => overlay.classList.add("show"));
+      const ov = document.getElementById("winnerOverlay");
+      ov.style.display = "flex";
+      requestAnimationFrame(() => ov.classList.add("show"));
     }
 
     function launchConfetti() {
       const area = document.getElementById("confettiArea");
       area.innerHTML = "";
-      for (let i = 0; i < 32; i++) {
+      for (let i = 0; i < 36; i++) {
         const el = document.createElement("span");
         el.className = "confetti-piece";
-        el.style.left = `${Math.random() * 100}%`;
+        el.style.left   = `${Math.random() * 100}%`;
         el.style.background = COLORS[i % COLORS.length];
-        el.style.animationDelay = `${Math.random() * 0.5}s`;
-        el.style.animationDuration = `${0.7 + Math.random() * 0.8}s`;
+        el.style.width  = `${5 + Math.random() * 6}px`;
+        el.style.height = `${5 + Math.random() * 6}px`;
+        el.style.animationDelay    = `${Math.random() * 0.5}s`;
+        el.style.animationDuration = `${0.8 + Math.random() * 0.8}s`;
         area.appendChild(el);
       }
     }
 
     document.getElementById("btnClose").addEventListener("click", () => {
-      const overlay = document.getElementById("overlay");
-      overlay.classList.remove("show");
-      setTimeout(() => { overlay.style.display = "none"; }, 350);
+      const ov = document.getElementById("winnerOverlay");
+      ov.classList.remove("show");
+      setTimeout(() => { ov.style.display = "none"; }, 400);
     });
 
     // ===== Name List =====
     function renderNameList() {
       const container = document.getElementById("name-list");
       container.innerHTML = names.map((name, i) => `
-        <div class="name-chip" style="border-left-color: ${COLORS[i % COLORS.length]}">
-          <span class="chip-dot" style="background: ${COLORS[i % COLORS.length]}"></span>
+        <div class="name-chip">
+          <span class="chip-num">${i + 1}</span>
+          <span class="chip-dot" style="background:${COLORS[i % COLORS.length]}"></span>
           <span class="chip-name">${name}</span>
-          <button class="btn-remove" onclick="removeName(${i})" title="削除">×</button>
+          <button class="btn-remove" onclick="removeName(${i})" title="削除">✕</button>
         </div>
       `).join("");
       drawWheel(currentAngle);
@@ -511,24 +795,15 @@
       const input = document.getElementById("newName");
       const name  = input.value.trim();
       if (!name) return;
-      if (names.includes(name)) {
-        alert("その名前は既に追加されています");
-        return;
-      }
-      if (names.length >= 20) {
-        alert("最大20名まで追加できます");
-        return;
-      }
+      if (names.includes(name)) { alert("その名前は既に追加されています"); return; }
+      if (names.length >= 20)   { alert("最大20名まで追加できます"); return; }
       names.push(name);
       input.value = "";
       renderNameList();
     }
 
     function removeName(index) {
-      if (names.length <= 2) {
-        alert("最低2名必要です");
-        return;
-      }
+      if (names.length <= 2) { alert("最低2名必要です"); return; }
       names.splice(index, 1);
       renderNameList();
     }
